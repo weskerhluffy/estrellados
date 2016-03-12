@@ -12,6 +12,26 @@
 #include <assert.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <math.h>
+
+#ifdef CACA_COMUN_LOG
+#include <execinfo.h>
+#endif
+
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
+#define CACA_COMUN_TAM_MAX_LINEA 11
+#define CACA_LOG_MAX_TAM_CADENA 200
+
+#define BITCH_VECTOR_NUM_BITS (sizeof(bitch_vector) * 8)
+
+#define CACA_COMUN_ASSERT_DUROTE 0
+#define CACA_COMUN_ASSERT_SUAVECITO 1
+#define CACA_COMUN_ASSERT_NIMADRES 2
 
 typedef unsigned long tipo_dato;
 
@@ -21,7 +41,50 @@ typedef enum BOOLEANOS {
 	falso = 0, verdadero
 } bool;
 
+/*
+ #define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_SUAVECITO
+ */
+#define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_DUROTE
+
+#if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_DUROTE
+#define assert_timeout(condition) assert(condition);
+#endif
+#if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_SUAVECITO
+#define assert_timeout(condition) if(!(condition)){printf("fuck\n");sleep(10);}
+#endif
+#if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_NIMADRES
+#define assert_timeout(condition) 0
+#endif
+
+#ifdef CACA_COMUN_LOG
+#define caca_log_debug(formato, args...) \
+		do \
+		{ \
+			size_t profundidad = 0; \
+			void *array[CACA_LOG_MAX_TAM_CADENA]; \
+ 			profundidad = backtrace(array, CACA_LOG_MAX_TAM_CADENA); \
+			caca_log_debug_func(formato,__FILE__, __func__, __LINE__,profundidad,##args); \
+		} \
+		while(0);
+#else
+void caca_log_debug_func(const char *format, ...);
+#define caca_log_debug(formato, args...) 0
+#endif
+
+#define caca_comun_max(x,y) ((x) < (y) ? (y) : (x))
+#define caca_comun_min(x,y) ((x) < (y) ? (x) : (y))
+
+void caca_log_debug_func(const char *format, ...);
+
+#define ESTRESHADOS_MAX_ESTRELLAS 15000
+#define ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS ESTRESHADOS_MAX_ESTRELLAS*2
+#define ESTRESHADOS_MAX_ELEMENTOS_INPUT ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS+2
+#define ESTRESHADOS_MAX_VALOR 32000
+#define ESTRESHADOS_VALOR_INVALIDO -1
+
 #if 1
+
+#define AVL_VALOR_INVALIDO ESTRESHADOS_VALOR_INVALIDO
 
 struct avl_node_s {
 	tipo_dato llave;
@@ -51,10 +114,6 @@ typedef struct avl_tree_iterator_t {
 	char *contador_visitas;
 	avl_node_t *nodo_actual;
 } avl_tree_iterator_t;
-
-#endif
-
-#if 1
 
 /* Create a new AVL tree. */
 avl_tree_t *avl_create(avl_tree_t **arbolin, int max_nodos) {
@@ -521,7 +580,8 @@ static inline avl_node_t* avl_tree_iterador_siguiente(avl_tree_iterator_t *iter)
 
 		break;
 	default:
-		assert_timeout(0);
+		assert_timeout(0)
+		;
 		break;
 	}
 
@@ -724,7 +784,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 				assert_timeout(!arbolini->ultimo_nodo_liberado_idx);
 				arbolini->ultimo_nodo_liberado_idx = temp->indice_en_arreglo;
 				memset(temp, 0, sizeof(avl_node_t));
-				temp->llave = CACA_X_VALOR_INVALIDO;
+				temp->llave = AVL_VALOR_INVALIDO;
 
 			} else {
 				// node with two children: Get the inorder successor (smallest
@@ -792,3 +852,227 @@ void avl_borrar(avl_tree_t *tree, int value) {
 
 #endif
 
+void caca_comun_current_utc_time(struct timespec *ts) {
+
+#ifdef __MACH__
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	ts->tv_sec = mts.tv_sec;
+	ts->tv_nsec = mts.tv_nsec;
+#else
+	clock_gettime(CLOCK_REALTIME, ts);
+#endif
+
+}
+
+void caca_comun_timestamp(char *stime) {
+	time_t ltime;
+	struct tm result;
+	long ms;
+	struct timespec spec;
+	char parte_milisecundos[50];
+
+	ltime = time(NULL );
+
+	localtime_r(&ltime, &result);
+	asctime_r(&result, stime);
+
+	*(stime + strlen(stime) - 1) = ' ';
+
+	caca_comun_current_utc_time(&spec);
+	ms = round(spec.tv_nsec / 1.0e3);
+	sprintf(parte_milisecundos, "%ld", ms);
+	strcat(stime, parte_milisecundos);
+}
+void caca_log_debug_func(const char *format, ...) {
+
+	va_list arg;
+	va_list arg2;
+	const char *PEDAZO_TIMESTAMP_HEADER = "tiempo: %s; ";
+	const char *HEADER =
+			"archivo: %s; funcion: %s; linea %d; nivel: %zd caca 8====D ";
+	char formato[CACA_LOG_MAX_TAM_CADENA + sizeof(HEADER)
+			+ sizeof(PEDAZO_TIMESTAMP_HEADER)] = { '\0' };
+	char pedazo_timestamp[sizeof(PEDAZO_TIMESTAMP_HEADER) + 100] = { '\0' };
+	char cadena_timestamp[100] = { '\0' };
+
+	caca_comun_timestamp(cadena_timestamp);
+	sprintf(pedazo_timestamp, PEDAZO_TIMESTAMP_HEADER, cadena_timestamp);
+
+	strcpy(formato, pedazo_timestamp);
+	strcat(formato, HEADER);
+	strcat(formato, format);
+	strcat(formato, "\n");
+
+	va_start(arg, format);
+	va_copy(arg2, arg);
+	vprintf(formato, arg2);
+	va_end(arg2);
+	va_end(arg);
+}
+static char *caca_arreglo_a_cadena(tipo_dato *arreglo, int tam_arreglo,
+		char *buffer) {
+	int i;
+	char *ap_buffer = NULL;
+	int characteres_escritos = 0;
+#ifdef ONLINE_JUDGE
+	return NULL;
+#endif
+
+	memset(buffer, 0, 100);
+	ap_buffer = buffer;
+
+	for (i = 0; i < tam_arreglo; i++) {
+		characteres_escritos +=
+				sprintf(ap_buffer + characteres_escritos, "%2ld",
+						*(arreglo + i));
+		if (i < tam_arreglo - 1) {
+			*(ap_buffer + characteres_escritos++) = ',';
+		}
+	}
+	*(ap_buffer + characteres_escritos) = '\0';
+	return ap_buffer;
+}
+
+void caca_comun_strreplace(char s[], char chr, char repl_chr) {
+	int i = 0;
+	while (s[i] != '\0') {
+		if (s[i] == chr) {
+			s[i] = repl_chr;
+		}
+		i++;
+	}
+}
+
+static inline int lee_matrix_long_stdin(tipo_dato *matrix, int *num_filas,
+		int *num_columnas, int num_max_filas, int num_max_columnas) {
+	int indice_filas = 0;
+	int indice_columnas = 0;
+	long numero = 0;
+	char *siguiente_cadena_numero = NULL;
+	char *cadena_numero_actual = NULL;
+	char *linea = NULL;
+
+	linea = calloc(CACA_COMUN_TAM_MAX_LINEA, sizeof(char));
+
+	while (indice_filas < num_max_filas
+			&& fgets(linea, CACA_COMUN_TAM_MAX_LINEA, stdin)) {
+		indice_columnas = 0;
+		cadena_numero_actual = linea;
+		caca_comun_strreplace(linea, '\n', '\0');
+		if (!strlen(linea)) {
+			caca_log_debug("weird, linea vacia\n");
+			continue;
+		}
+		for (siguiente_cadena_numero = linea;; siguiente_cadena_numero =
+				cadena_numero_actual) {
+			caca_log_debug("el numero raw %s\n", linea);
+			numero = strtol(siguiente_cadena_numero, &cadena_numero_actual, 10);
+			if (cadena_numero_actual == siguiente_cadena_numero) {
+				break;
+			}
+			*(matrix + indice_filas * num_max_columnas + indice_columnas) =
+					numero;
+			caca_log_debug("en col %d, fil %d, el valor %lu\n", indice_columnas,
+					indice_filas, numero);
+			indice_columnas++;
+			caca_log_debug("las columnas son %d\n", indice_columnas);
+		}
+		if (num_columnas) {
+			num_columnas[indice_filas] = indice_columnas;
+		}
+		indice_filas++;
+		caca_log_debug("las filas son %d, con clos %d\n", indice_filas,
+				indice_columnas);
+	}
+
+	*num_filas = indice_filas;
+	free(linea);
+	return 0;
+}
+
+void estreshados_main() {
+	int num_filas = 0;
+	tipo_dato num_estrellas = 0;
+	tipo_dato *coordenadas_separadas = NULL;
+	tipo_dato *coordenadas_enmascaradas = NULL;
+	tipo_dato *matrix = NULL;
+
+	avl_tree_t *arbolin = NULL;
+
+	char *buffer = NULL;
+	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
+	assert_timeout(buffer);
+
+	matrix = calloc(ESTRESHADOS_MAX_ESTRELLAS + 1, sizeof(tipo_dato));
+	assert_timeout(matrix);
+
+	lee_matrix_long_stdin(matrix, &num_filas, NULL,
+	ESTRESHADOS_MAX_ELEMENTOS_INPUT + 1, 2);
+
+	num_estrellas = *matrix;
+	coordenadas_separadas = matrix + 2;
+
+	caca_log_debug("cuando veiamos estreshas %lu", num_estrellas);
+	caca_log_debug("tu eras una de ellas %s",
+			caca_arreglo_a_cadena(coordenadas_separadas,num_estrellas*2,buffer));
+
+	coordenadas_enmascaradas = calloc(ESTRESHADOS_MAX_ESTRELLAS,
+			sizeof(tipo_dato));
+	assert_timeout(coordenadas_enmascaradas);
+
+	for (int i = 0; i < num_estrellas; i++) {
+		*(coordenadas_enmascaradas + i) = (unsigned int) *(coordenadas_separadas
+				+ i * 2 + 1);
+		caca_log_debug(
+				"asignando a enmascaradas 'y' %u, keda la enmascarada %lu",
+				coordenadas_separadas[i*2+1], coordenadas_enmascaradas[i]);
+
+		*(coordenadas_enmascaradas + i) <<= 32;
+		caca_log_debug("corrimiento de 32 a enmascarado keda %lu",
+				coordenadas_enmascaradas[i]);
+
+		*(coordenadas_enmascaradas + i) |=
+				(unsigned int) *(coordenadas_separadas + i * 2 + 0);
+		caca_log_debug(
+				"asignando a enmascaradas 'x' %u, keda la enmascarada %lu",
+				coordenadas_separadas[i*2+0], coordenadas_enmascaradas[i]);
+	}
+
+	caca_log_debug("las coordenadas enmascaradas %s",
+			caca_arreglo_a_cadena(coordenadas_enmascaradas,num_estrellas,buffer));
+
+	avl_create(&arbolin, num_estrellas);
+
+	for (int i = 0; i < num_estrellas; i++) {
+		tipo_dato estrella_negra = 0;
+
+		estrella_negra = *(coordenadas_enmascaradas + i);
+
+		caca_log_debug("insertando %u,%u (%lu)", (unsigned int)estrella_negra,
+				(unsigned int)(estrella_negra>>32), estrella_negra);
+
+		avl_insert(arbolin, estrella_negra);
+
+#ifndef ONLINE_JUDGE
+		avl_tree_validar_arbolin_indices(arbolin, arbolin->root);
+#endif
+		memset(buffer, '\0', CACA_COMUN_TAM_MAX_LINEA*10);
+
+		caca_log_debug("el arbolin aora es\n%s",
+				avl_tree_sprint_identado(arbolin,buffer));
+	}
+
+	avl_destroy(arbolin);
+
+	free(coordenadas_enmascaradas);
+	free(matrix);
+	free(buffer);
+}
+
+int main(int argc, char **argv) {
+	estreshados_main();
+}
