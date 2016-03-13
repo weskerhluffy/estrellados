@@ -34,6 +34,7 @@
 #define CACA_COMUN_ASSERT_NIMADRES 2
 
 typedef unsigned long tipo_dato;
+typedef unsigned int natural;
 
 typedef long long bitch_vector;
 
@@ -81,6 +82,10 @@ void caca_log_debug_func(const char *format, ...);
 #define ESTRESHADOS_MAX_ELEMENTOS_INPUT ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS+2
 #define ESTRESHADOS_MAX_VALOR 32000
 #define ESTRESHADOS_VALOR_INVALIDO -1
+#define ESTRESHADOS_MAX_NIVELES_AVL 15
+
+#define ESTRESHADOS_VALOR_X(llave) ((natural)((llave)>>32))
+#define ESTRESHADOS_VALOR_Y(llave) ((natural)(llave))
 
 #if 1
 
@@ -89,7 +94,8 @@ void caca_log_debug_func(const char *format, ...);
 struct avl_node_s {
 	tipo_dato llave;
 	int altura;
-	int indice_en_arreglo;
+	natural num_decendientes;
+	natural indice_en_arreglo;
 	struct avl_node_s *left;
 	struct avl_node_s *right;
 	struct avl_node_s *padre;
@@ -189,6 +195,24 @@ static inline void avl_node_actualizar_altura(avl_node_t *node) {
 	}
 }
 
+static inline void avl_node_actualizar_num_decendientes(avl_node_t *node) {
+	int conteo_left = 0;
+	int conteo_right = 0;
+
+	if (node->left) {
+		conteo_left = node->left->num_decendientes;
+	}
+	if (node->right) {
+		conteo_right = node->right->num_decendientes;
+	}
+	if (node->left || node->right) {
+		node->num_decendientes = conteo_left + conteo_right
+				+ (node->left ? 1 : 0) + (node->right ? 1 : 0);
+	} else {
+		node->num_decendientes = 0;
+	}
+}
+
 /* Find the balance of an AVL node */
 int avl_balance_factor(avl_node_t *node) {
 	int bf = 0;
@@ -214,6 +238,8 @@ avl_node_t *avl_rotate_leftleft(avl_node_t *node) {
 
 	avl_node_actualizar_altura(a);
 	avl_node_actualizar_altura(b);
+	avl_node_actualizar_num_decendientes(a);
+	avl_node_actualizar_num_decendientes(b);
 
 	a->padre = b;
 	b->padre = padre;
@@ -241,6 +267,10 @@ avl_node_t *avl_rotate_leftright(avl_node_t *node) {
 	avl_node_actualizar_altura(a);
 	avl_node_actualizar_altura(b);
 	avl_node_actualizar_altura(c);
+
+	avl_node_actualizar_num_decendientes(a);
+	avl_node_actualizar_num_decendientes(b);
+	avl_node_actualizar_num_decendientes(c);
 
 	a->padre = c;
 	b->padre = c;
@@ -273,6 +303,10 @@ avl_node_t *avl_rotate_rightleft(avl_node_t *node) {
 	avl_node_actualizar_altura(b);
 	avl_node_actualizar_altura(c);
 
+	avl_node_actualizar_num_decendientes(a);
+	avl_node_actualizar_num_decendientes(b);
+	avl_node_actualizar_num_decendientes(c);
+
 	a->padre = c;
 	b->padre = c;
 	c->padre = padre;
@@ -299,6 +333,9 @@ avl_node_t *avl_rotate_rightright(avl_node_t *node) {
 
 	avl_node_actualizar_altura(a);
 	avl_node_actualizar_altura(b);
+
+	avl_node_actualizar_num_decendientes(a);
+	avl_node_actualizar_num_decendientes(b);
 
 	a->padre = b;
 	b->padre = padre;
@@ -400,16 +437,24 @@ void avl_insert(avl_tree_t *tree, long value) {
 		while (next != NULL ) {
 			last = next;
 
+			next->num_decendientes++;
+
 			if (value < next->llave) {
 				next = next->left;
+			} else {
+				if (value > next->llave) {
+					next = next->right;
+				} else {
+					if (value == next->llave) {
+						/* Have we already inserted this node? */
+						caca_log_debug("llave ya existe, no insertada\n");
+						assert_timeout(0);
+					} else {
+						caca_log_debug("verga, no es maior menor ni igual\n");
+						assert_timeout(0);
 
-			} else if (value > next->llave) {
-				next = next->right;
-
-				/* Have we already inserted this node? */
-			} else if (value == next->llave) {
-				caca_log_debug("llave ya existe, no insertada\n");
-				assert_timeout(0);
+					}
+				}
 			}
 		}
 
@@ -645,6 +690,49 @@ static inline char* avl_tree_sprint(avl_tree_t *arbolini, char *buf) {
 	return buf;
 }
 
+static inline char *avl_tree_inoder_node_travesti_conteo(avl_node_t *nodo,
+		char *buf, int profundidad_maxima) {
+	char num_buf[100] = { '\0' };
+	int profundidad = 0;
+
+	assert_timeout(profundidad_maxima == -1 || profundidad != -1);
+
+	if (nodo != NULL ) {
+		profundidad = profundidad_maxima - nodo->altura;
+
+		assert_timeout(!nodo->right || nodo->right->padre == nodo);
+		avl_tree_inoder_node_travesti_conteo(nodo->right, buf,
+				profundidad_maxima);
+
+		if (profundidad_maxima != -1) {
+			for (int i = 0; i < profundidad; i++) {
+				strcat(buf, " ");
+			}
+		}
+		sprintf(num_buf, "%ld [%u,%u] (%u)", nodo->llave,
+				(natural )(nodo->llave >> 32), (natural )nodo->llave,
+				nodo->num_decendientes);
+		strcat(buf, num_buf);
+		if (profundidad_maxima != -1) {
+			strcat(buf, "\n");
+		}
+
+		assert_timeout(!nodo->left || nodo->left->padre == nodo);
+		avl_tree_inoder_node_travesti_conteo(nodo->left, buf,
+				profundidad_maxima);
+
+		/*
+		 if (profundidad_maxima != -1) {
+		 strcat(buf, "\n");
+		 for (int i = 0; i <= profundidad; i++) {
+		 strcat(buf, " ");
+		 }
+		 }
+		 */
+	}
+	return buf;
+}
+
 static inline char* avl_tree_sprint_identado(avl_tree_t *arbolini, char *buf) {
 	int profundidad_maxima = 0;
 
@@ -653,7 +741,8 @@ static inline char* avl_tree_sprint_identado(avl_tree_t *arbolini, char *buf) {
 	}
 
 	profundidad_maxima = arbolini->root->altura;
-	avl_tree_inoder_node_travesti(arbolini->root, buf, profundidad_maxima);
+	avl_tree_inoder_node_travesti_conteo(arbolini->root, buf,
+			profundidad_maxima);
 	return buf;
 }
 
@@ -927,8 +1016,31 @@ static char *caca_arreglo_a_cadena(tipo_dato *arreglo, int tam_arreglo,
 
 	for (i = 0; i < tam_arreglo; i++) {
 		characteres_escritos +=
-				sprintf(ap_buffer + characteres_escritos, "%2ld",
+				sprintf(ap_buffer + characteres_escritos, "%2lu",
 						*(arreglo + i));
+		if (i < tam_arreglo - 1) {
+			*(ap_buffer + characteres_escritos++) = ',';
+		}
+	}
+	*(ap_buffer + characteres_escritos) = '\0';
+	return ap_buffer;
+}
+
+static char *caca_arreglo_a_cadena_natural(natural *arreglo,
+		natural tam_arreglo, char *buffer) {
+	int i;
+	char *ap_buffer = NULL;
+	int characteres_escritos = 0;
+#ifdef ONLINE_JUDGE
+	return NULL;
+#endif
+
+	memset(buffer, 0, 100);
+	ap_buffer = buffer;
+
+	for (i = 0; i < tam_arreglo; i++) {
+		characteres_escritos += sprintf(ap_buffer + characteres_escritos, "%2u",
+				*(arreglo + i));
 		if (i < tam_arreglo - 1) {
 			*(ap_buffer + characteres_escritos++) = ',';
 		}
@@ -994,6 +1106,219 @@ static inline int lee_matrix_long_stdin(tipo_dato *matrix, int *num_filas,
 	return 0;
 }
 
+static inline bool estreshados_es_hijo_izq(avl_tree_t *arbolin,
+		avl_node_t *nodo_padre, tipo_dato idx_potencial_hijo) {
+	bool es_izq = falso;
+	avl_node_t *potencial_hijo = NULL;
+
+	potencial_hijo = arbolin->nodos_mem + idx_potencial_hijo;
+
+	assert_timeout(nodo_padre->left || nodo_padre->right);
+
+	if (nodo_padre->left) {
+		if (potencial_hijo == nodo_padre->left) {
+			es_izq = verdadero;
+		} else {
+			assert_timeout(nodo_padre->right == potencial_hijo);
+		}
+	} else {
+		assert_timeout(nodo_padre->right == potencial_hijo);
+	}
+
+	return es_izq;
+}
+
+static inline void estreshados_encuentra_ancestros(avl_tree_t *arbolin,
+		tipo_dato llave, natural *ancestros, natural *num_ancestros,
+		natural tam_ancestros) {
+	natural num_ancestros_usados = 0;
+	bool encontrado = falso;
+	avl_node_t *ancestro_actual = NULL;
+
+	assert_timeout(arbolin->root);
+	*num_ancestros = 0;
+
+	ancestro_actual = arbolin->root;
+	caca_log_debug("el idx de root es %u", ancestro_actual->indice_en_arreglo);
+
+	while (ancestro_actual) {
+		*(ancestros + tam_ancestros - (num_ancestros_usados + 1)) =
+				ancestro_actual->indice_en_arreglo;
+		num_ancestros_usados++;
+		if (llave > ancestro_actual->llave) {
+			ancestro_actual = ancestro_actual->right;
+		} else {
+			if (llave < ancestro_actual->llave) {
+				ancestro_actual = ancestro_actual->left;
+			} else {
+				ancestro_actual = NULL;
+				encontrado = verdadero;
+			}
+		}
+	}
+
+	assert_timeout(encontrado);
+
+	*num_ancestros = num_ancestros_usados;
+}
+
+static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
+		tipo_dato estresha_recien_agregada) {
+	tipo_dato conteo_inorder_en_x = 0;
+	natural indice_ultimo_ancestro_comun = 0;
+	natural num_ancestros_minimo = 0;
+	natural num_ancestros_recien = 0;
+	natural conteo_ancestros = 0;
+	natural ancestros_nodo_minumo[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
+	natural ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
+	avl_node_t *nodo_actual = NULL;
+	avl_node_t *nodo_menor = NULL;
+	avl_node_t *nodo_recien = NULL;
+
+	char *buffer = NULL;
+	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
+
+	nodo_menor = avl_tree_max_min(arbolini, falso);
+
+	caca_log_debug("el menor mono %u,%u", (natural)(nodo_menor->llave>>32),
+			(natural)nodo_menor->llave);
+
+	estreshados_encuentra_ancestros(arbolini, nodo_menor->llave,
+			ancestros_nodo_minumo, &num_ancestros_minimo,
+			ESTRESHADOS_MAX_NIVELES_AVL);
+
+	caca_log_debug("los ancestros de minimo son %s",
+			caca_arreglo_a_cadena_natural(ancestros_nodo_minumo,ESTRESHADOS_MAX_NIVELES_AVL,buffer));
+
+	estreshados_encuentra_ancestros(arbolini, estresha_recien_agregada,
+			ancestros_nodo_recien_agregado, &num_ancestros_recien,
+			ESTRESHADOS_MAX_NIVELES_AVL);
+
+	caca_log_debug("los ancestros de recien son %s",
+			caca_arreglo_a_cadena_natural(ancestros_nodo_recien_agregado,ESTRESHADOS_MAX_NIVELES_AVL,buffer));
+
+	for (indice_ultimo_ancestro_comun = ESTRESHADOS_MAX_NIVELES_AVL - 1;
+			indice_ultimo_ancestro_comun != 0; indice_ultimo_ancestro_comun--) {
+		natural idx_ancestro_minimo = 0;
+		natural idx_ancestro_recien = 0;
+
+		if (conteo_ancestros >= num_ancestros_minimo
+				|| conteo_ancestros >= num_ancestros_recien) {
+			break;
+		}
+		conteo_ancestros++;
+
+		idx_ancestro_minimo =
+				ancestros_nodo_minumo[indice_ultimo_ancestro_comun];
+		idx_ancestro_recien =
+				ancestros_nodo_recien_agregado[indice_ultimo_ancestro_comun];
+
+		if (idx_ancestro_minimo != idx_ancestro_recien) {
+			break;
+		}
+	}
+
+	assert_timeout(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
+
+	nodo_recien = arbolini->nodos_mem
+			+ ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL
+					- (num_ancestros_recien)];
+
+	assert_timeout(estresha_recien_agregada == nodo_recien->llave);
+	caca_log_debug("contando desde el min asta %u,%u",
+			(natural)(estresha_recien_agregada>>32),
+			(natural)(estresha_recien_agregada));
+
+	for (natural i = indice_ultimo_ancestro_comun + 1;
+			i >= ESTRESHADOS_MAX_NIVELES_AVL - (num_ancestros_recien); i--) {
+		bool ancestro_actual_hijo_izq = falso;
+		natural indice_ancestro_actual = 0;
+		natural indice_ancestro_anterior = 0;
+		avl_node_t *nodo_ancestro_actual = NULL;
+		avl_node_t *nodo_ancestro_anterior = NULL;
+
+		indice_ancestro_actual = i;
+		if (indice_ancestro_actual < indice_ultimo_ancestro_comun + 1) {
+			indice_ancestro_anterior = indice_ancestro_actual + 1;
+
+			nodo_ancestro_actual = arbolini->nodos_mem
+					+ ancestros_nodo_recien_agregado[indice_ancestro_actual];
+
+			caca_log_debug("el ultimo ancestro comun %u q es el nodo %u,%u",
+					ancestros_nodo_recien_agregado[indice_ancestro_actual],
+					(natural)(nodo_ancestro_actual->llave>>32),
+					(natural)nodo_ancestro_actual->llave);
+
+			assert_timeout(
+					nodo_ancestro_actual->indice_en_arreglo
+							== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+
+			nodo_ancestro_anterior = arbolini->nodos_mem
+					+ ancestros_nodo_recien_agregado[indice_ancestro_anterior];
+
+			ancestro_actual_hijo_izq = estreshados_es_hijo_izq(arbolini,
+					nodo_ancestro_anterior,
+					nodo_ancestro_actual->indice_en_arreglo);
+
+			caca_log_debug("el nodo %u,%u es hijo %s de %u,%u",
+					ESTRESHADOS_VALOR_X(nodo_ancestro_actual->llave),
+					ESTRESHADOS_VALOR_Y(nodo_ancestro_actual->llave),
+					ancestro_actual_hijo_izq?"izq":"der",
+					ESTRESHADOS_VALOR_X(nodo_ancestro_anterior->llave),
+					ESTRESHADOS_VALOR_Y(nodo_ancestro_anterior->llave));
+
+			if (!ancestro_actual_hijo_izq) {
+				conteo_inorder_en_x += 1;
+
+				caca_log_debug("el nodo %u,%u aora es nivel %lu por el padre",
+						ESTRESHADOS_VALOR_X(estresha_recien_agregada),
+						ESTRESHADOS_VALOR_Y(estresha_recien_agregada),
+						conteo_inorder_en_x);
+
+				if (nodo_ancestro_anterior->left) {
+					conteo_inorder_en_x +=
+							nodo_ancestro_anterior->left->num_decendientes + 1;
+
+					caca_log_debug(
+							"el nodo %u,%u aora es nivel %lu por los ijos izq del padre",
+							ESTRESHADOS_VALOR_X(estresha_recien_agregada),
+							ESTRESHADOS_VALOR_Y(estresha_recien_agregada),
+							conteo_inorder_en_x);
+				}
+			}
+		} else {
+			if (num_ancestros_recien == conteo_ancestros) {
+				nodo_ancestro_actual =
+						arbolini->nodos_mem
+								+ ancestros_nodo_recien_agregado[indice_ancestro_actual];
+
+				caca_log_debug(
+						"el ultimo ancestro comun (q es el mismo agregado) %u q es el nodo %u,%u de idx %u",
+						ancestros_nodo_recien_agregado[indice_ancestro_actual],
+						(natural)(nodo_ancestro_actual->llave>>32),
+						(natural)nodo_ancestro_actual->llave,
+						nodo_ancestro_actual->indice_en_arreglo);
+
+				assert_timeout(
+						nodo_ancestro_actual->indice_en_arreglo
+								== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+
+				if (nodo_ancestro_actual->left) {
+					conteo_inorder_en_x +=
+							nodo_ancestro_actual->left->num_decendientes;
+				}
+			}
+
+		}
+	}
+
+	caca_log_debug("el nodo %u,%u es de nivel %lu",
+			(natural)(estresha_recien_agregada>>32),
+			(natural)estresha_recien_agregada, conteo_inorder_en_x);
+
+	return conteo_inorder_en_x;
+}
+
 void estreshados_main() {
 	int num_filas = 0;
 	tipo_dato num_estrellas = 0;
@@ -1025,21 +1350,21 @@ void estreshados_main() {
 	assert_timeout(coordenadas_enmascaradas);
 
 	for (int i = 0; i < num_estrellas; i++) {
-		*(coordenadas_enmascaradas + i) = (unsigned int) *(coordenadas_separadas
-				+ i * 2 + 1);
+		*(coordenadas_enmascaradas + i) = (natural) *(coordenadas_separadas
+				+ i * 2 + 0);
 		caca_log_debug(
 				"asignando a enmascaradas 'y' %u, keda la enmascarada %lu",
-				coordenadas_separadas[i*2+1], coordenadas_enmascaradas[i]);
+				coordenadas_separadas[i*2+0], coordenadas_enmascaradas[i]);
 
 		*(coordenadas_enmascaradas + i) <<= 32;
 		caca_log_debug("corrimiento de 32 a enmascarado keda %lu",
 				coordenadas_enmascaradas[i]);
 
-		*(coordenadas_enmascaradas + i) |=
-				(unsigned int) *(coordenadas_separadas + i * 2 + 0);
+		*(coordenadas_enmascaradas + i) |= (natural) *(coordenadas_separadas
+				+ i * 2 + 1);
 		caca_log_debug(
 				"asignando a enmascaradas 'x' %u, keda la enmascarada %lu",
-				coordenadas_separadas[i*2+0], coordenadas_enmascaradas[i]);
+				coordenadas_separadas[i*2+1], coordenadas_enmascaradas[i]);
 	}
 
 	caca_log_debug("las coordenadas enmascaradas %s",
@@ -1048,12 +1373,13 @@ void estreshados_main() {
 	avl_create(&arbolin, num_estrellas);
 
 	for (int i = 0; i < num_estrellas; i++) {
+		tipo_dato num_estrellas_abajo_izq = 0;
 		tipo_dato estrella_negra = 0;
 
 		estrella_negra = *(coordenadas_enmascaradas + i);
 
-		caca_log_debug("insertando %u,%u (%lu)", (unsigned int)estrella_negra,
-				(unsigned int)(estrella_negra>>32), estrella_negra);
+		caca_log_debug("insertando %u,%u (%lu)", (natural)(estrella_negra>>32),
+				(natural)estrella_negra, estrella_negra);
 
 		avl_insert(arbolin, estrella_negra);
 
@@ -1064,6 +1390,9 @@ void estreshados_main() {
 
 		caca_log_debug("el arbolin aora es\n%s",
 				avl_tree_sprint_identado(arbolin,buffer));
+
+		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba(arbolin,
+				estrella_negra);
 	}
 
 	avl_destroy(arbolin);
