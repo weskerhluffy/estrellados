@@ -3,11 +3,11 @@ env DYLD_INSERT_LIBRARIES=/usr/lib/libgmalloc.dylib
 settings set target.run-args < caca.txt
 command alias nodos memory read -s 16 -f int64_t -c 31 me->nodes
 #br s -n avltree_insert -c "k==644235 && me->size==31"
-settings set target.run-args < caca.txt
+#settings set target.run-args < caca.txt
 #settings set target.run-args < caca1.txt
 #settings set target.run-args < caca2.txt
 #settings set target.run-args < caca3.txt
 #settings set target.run-args < caca4.txt
 #settings set target.run-args < caca5.txt
-#settings set target.run-args < /tmp/como.txt
+settings set target.run-args < /tmp/como.txt
 #settings set target.run-args < /tmp/como_rev.txt

@@ -24,7 +24,7 @@
 #include <mach/mach.h>
 #endif
 
-#define CACA_COMUN_TAM_MAX_LINEA 11
+#define CACA_COMUN_TAM_MAX_LINEA 12
 #define CACA_LOG_MAX_TAM_CADENA 200
 
 #define BITCH_VECTOR_NUM_BITS (sizeof(bitch_vector) * 8)
@@ -68,7 +68,6 @@ typedef enum BOOLEANOS {
 		} \
 		while(0);
 #else
-void caca_log_debug_func(const char *format, ...);
 #define caca_log_debug(formato, args...) 0
 #endif
 
@@ -78,11 +77,11 @@ void caca_log_debug_func(const char *format, ...);
 void caca_log_debug_func(const char *format, ...);
 
 #define ESTRESHADOS_MAX_ESTRELLAS 15000
-#define ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS ESTRESHADOS_MAX_ESTRELLAS*2
-#define ESTRESHADOS_MAX_ELEMENTOS_INPUT ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS+2
+#define ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS ESTRESHADOS_MAX_ESTRELLAS
+#define ESTRESHADOS_MAX_ELEMENTOS_INPUT (ESTRESHADOS_MAX_ELEMENTOS_COORDENADAS+1)*2
 #define ESTRESHADOS_MAX_VALOR 32000
 #define ESTRESHADOS_VALOR_INVALIDO -1
-#define ESTRESHADOS_MAX_NIVELES_AVL 15
+#define ESTRESHADOS_MAX_NIVELES_AVL 17
 
 #define ESTRESHADOS_VALOR_X(llave) ((natural)((llave)>>32))
 #define ESTRESHADOS_VALOR_Y(llave) ((natural)(llave))
@@ -1229,8 +1228,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 			(natural)(estresha_recien_agregada>>32),
 			(natural)(estresha_recien_agregada));
 
-	for (natural i = indice_ultimo_ancestro_comun + 1;
-			i >= ESTRESHADOS_MAX_NIVELES_AVL - (num_ancestros_recien); i--) {
+	for (int i = indice_ultimo_ancestro_comun + 1;
+			i >= (ESTRESHADOS_MAX_NIVELES_AVL - num_ancestros_recien); i--) {
 		bool ancestro_actual_hijo_izq = falso;
 		natural indice_ancestro_actual = 0;
 		natural indice_ancestro_anterior = 0;
@@ -1325,6 +1324,7 @@ void estreshados_main() {
 	tipo_dato *coordenadas_separadas = NULL;
 	tipo_dato *coordenadas_enmascaradas = NULL;
 	tipo_dato *matrix = NULL;
+	tipo_dato *conteos_niveles = NULL;
 
 	avl_tree_t *arbolin = NULL;
 
@@ -1332,11 +1332,14 @@ void estreshados_main() {
 	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
 	assert_timeout(buffer);
 
-	matrix = calloc(ESTRESHADOS_MAX_ESTRELLAS + 1, sizeof(tipo_dato));
+	matrix = calloc(ESTRESHADOS_MAX_ELEMENTOS_INPUT, sizeof(tipo_dato));
 	assert_timeout(matrix);
 
+	conteos_niveles = calloc(ESTRESHADOS_MAX_ESTRELLAS, sizeof(tipo_dato));
+	assert_timeout(conteos_niveles);
+
 	lee_matrix_long_stdin(matrix, &num_filas, NULL,
-	ESTRESHADOS_MAX_ELEMENTOS_INPUT + 1, 2);
+			ESTRESHADOS_MAX_ESTRELLAS + 1, 2);
 
 	num_estrellas = *matrix;
 	coordenadas_separadas = matrix + 2;
@@ -1385,18 +1388,27 @@ void estreshados_main() {
 
 #ifndef ONLINE_JUDGE
 		avl_tree_validar_arbolin_indices(arbolin, arbolin->root);
-#endif
 		memset(buffer, '\0', CACA_COMUN_TAM_MAX_LINEA*10);
+#endif
 
 		caca_log_debug("el arbolin aora es\n%s",
 				avl_tree_sprint_identado(arbolin,buffer));
 
 		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba(arbolin,
 				estrella_negra);
+		conteos_niveles[num_estrellas_abajo_izq]++;
+	}
+
+	caca_log_debug("los niveles kedaron %s",
+			caca_arreglo_a_cadena(conteos_niveles,num_estrellas,buffer));
+
+	for (int i = 0; i < num_estrellas; i++) {
+		printf("%lu\n", conteos_niveles[i]);
 	}
 
 	avl_destroy(arbolin);
 
+	free(conteos_niveles);
 	free(coordenadas_enmascaradas);
 	free(matrix);
 	free(buffer);
