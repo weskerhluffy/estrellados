@@ -36,19 +36,19 @@
 #define CACA_COMUN_ASSERT_SUAVECITO 1
 #define CACA_COMUN_ASSERT_NIMADRES 2
 
-typedef unsigned long long tipo_dato;
+typedef unsigned long tipo_dato;
 typedef unsigned int natural;
 
-typedef long long bitch_vector;
+typedef long bitch_vector;
 
 typedef enum BOOLEANOS {
 	falso = 0, verdadero
 } bool;
 
-/*
  #define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_SUAVECITO
- */
+/*
 #define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_DUROTE
+ */
 
 #if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_DUROTE
 #define assert_timeout(condition) assert(condition);
@@ -336,20 +336,8 @@ avl_node_t *avl_rotate_rightright(avl_node_t *node) {
 	return (b);
 }
 
-/* Find the balance of an AVL node */
-int avl_balance_factor(avl_node_t *node) {
-	int bf = 0;
-
-	if (node->left)
-		bf += avl_node_height(node->left);
-	if (node->right)
-		bf -= avl_node_height(node->right);
-
-	return bf;
-}
-
 static inline avl_node_t *avl_balance_node_insertar(const avl_node_t *node,
-		const tipo_dato llave_nueva) {
+		const long llave_nueva) {
 	avl_node_t *newroot = NULL;
 	avl_node_t *nodo_actual = NULL;
 
@@ -408,8 +396,7 @@ static inline avl_node_t *avl_balance_node_insertar(const avl_node_t *node,
 }
 
 /* Balance a given tree */
-void avl_balance_insertar(avl_tree_t *tree, avl_node_t *nodo,
-		tipo_dato llave_nueva) {
+void avl_balance_insertar(avl_tree_t *tree, avl_node_t *nodo, long llave_nueva) {
 
 	avl_node_t *newroot = NULL;
 
@@ -421,7 +408,7 @@ void avl_balance_insertar(avl_tree_t *tree, avl_node_t *nodo,
 }
 
 /* Insert a new node. */
-void avl_insert(avl_tree_t *tree, tipo_dato value) {
+void avl_insert(avl_tree_t *tree, long value) {
 	avl_node_t *node = NULL;
 	avl_node_t *next = NULL;
 	avl_node_t *last = NULL;
@@ -479,7 +466,7 @@ void avl_insert(avl_tree_t *tree, tipo_dato value) {
 }
 
 /* Find the node containing a given value */
-avl_node_t *avl_find(avl_tree_t *tree, tipo_dato value) {
+avl_node_t *avl_find(avl_tree_t *tree, long value) {
 	avl_node_t *current = tree->root;
 
 	while (current && current->llave != value) {
@@ -493,7 +480,7 @@ avl_node_t *avl_find(avl_tree_t *tree, tipo_dato value) {
 }
 
 avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
-		avl_node_t **primer_nodo_mayor_o_igual, tipo_dato value, int tope,
+		avl_node_t **primer_nodo_mayor_o_igual, long value, int tope,
 		bool *tope_topado) {
 	avl_node_t *current = NULL;
 	avl_node_t *primer_nodo_mayor = NULL;
@@ -541,7 +528,7 @@ void avl_traverse_node_dfs(avl_node_t *node, int depth) {
 
 	for (i = 0; i < depth; i++)
 		putchar(' ');
-	printf("%lld: %d\n", node->llave, avl_balance_factor(node));
+	printf("%ld: %d\n", node->llave, avl_balance_factor(node));
 
 	if (node->right)
 		avl_traverse_node_dfs(node->right, depth + 2);
@@ -653,7 +640,7 @@ static inline char *avl_tree_inoder_node_travesti(avl_node_t *nodo, char *buf,
 		int profundidad_maxima) {
 	char num_buf[100] = { '\0' };
 	int profundidad = 0;
-	int i = 0;
+	int i=0;
 
 	assert_timeout(profundidad_maxima == -1 || profundidad != -1);
 
@@ -668,7 +655,7 @@ static inline char *avl_tree_inoder_node_travesti(avl_node_t *nodo, char *buf,
 				strcat(buf, " ");
 			}
 		}
-		sprintf(num_buf, "%lld", nodo->llave);
+		sprintf(num_buf, "%ld", nodo->llave);
 		strcat(buf, num_buf);
 		if (profundidad_maxima != -1) {
 			strcat(buf, "\n");
@@ -698,7 +685,7 @@ static inline char *avl_tree_inoder_node_travesti_conteo(avl_node_t *nodo,
 		char *buf, int profundidad_maxima) {
 	char num_buf[100] = { '\0' };
 	int profundidad = 0;
-	int i = 0;
+	int i=0;
 
 	assert_timeout(profundidad_maxima == -1 || profundidad != -1);
 
@@ -714,8 +701,8 @@ static inline char *avl_tree_inoder_node_travesti_conteo(avl_node_t *nodo,
 				strcat(buf, " ");
 			}
 		}
-		sprintf(num_buf, "%lld [%u,%u] (%u)", nodo->llave,
-				(natural )(nodo->llave >> 32), (natural )nodo->llave,
+		sprintf(num_buf, "%ld [%u,%u] (%u)", nodo->llave,
+				(natural)(nodo->llave >> 32), (natural )nodo->llave,
 				nodo->num_decendientes);
 		strcat(buf, num_buf);
 		if (profundidad_maxima != -1) {
@@ -830,6 +817,19 @@ static inline avl_node_t* avl_siguiente_nodo_inorder(avl_node_t *node) {
 	return current;
 }
 
+/* Find the balance of an AVL node */
+int avl_balance_factor(avl_node_t *node) {
+	int bf = 0;
+
+	if (node->left)
+		bf += avl_node_height(node->left);
+	if (node->right)
+		bf -= avl_node_height(node->right);
+
+	return bf;
+}
+
+
 static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 		avl_node_t *root, int key) {
 
@@ -857,7 +857,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 
 					padre = root->padre;
 					idx_en_arreglo = root->indice_en_arreglo;
-					*root = *temp;
+					*root = *temp; 
 					root->padre = padre;
 					root->indice_en_arreglo = idx_en_arreglo;
 					if (root->left) {
@@ -891,6 +891,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 	avl_node_actualizar_altura(root);
 
 	int balance = avl_balance_factor(root);
+
 
 	if (balance > 1 && avl_balance_factor(root->left) >= 0) {
 		return avl_rotate_leftleft(root);
@@ -936,9 +937,9 @@ void caca_comun_current_utc_time(struct timespec *ts) {
 	ts->tv_sec = mts.tv_sec;
 	ts->tv_nsec = mts.tv_nsec;
 #else
-#ifndef ONLINE_JUDGE
-	clock_gettime(CLOCK_REALTIME, ts);
-#endif
+	#ifndef ONLINE_JUDGE
+		clock_gettime(CLOCK_REALTIME, ts);
+	#endif
 #endif
 
 }
@@ -952,17 +953,17 @@ void caca_comun_timestamp(char *stime) {
 
 	ltime = time(NULL );
 
-#ifndef ONLINE_JUDGE
-	localtime_r(&ltime, &result);
-	asctime_r(&result, stime);
-#endif
+	#ifndef ONLINE_JUDGE
+		localtime_r(&ltime, &result);
+		asctime_r(&result, stime);
+	#endif
 
 	*(stime + strlen(stime) - 1) = ' ';
 
 	caca_comun_current_utc_time(&spec);
-#ifndef ONLINE_JUDGE
-	ms = round(spec.tv_nsec / 1.0e3);
-#endif
+	#ifndef ONLINE_JUDGE
+		ms = round(spec.tv_nsec / 1.0e3);
+	#endif
 	sprintf(parte_milisecundos, "%ld", ms);
 	strcat(stime, parte_milisecundos);
 }
@@ -1006,7 +1007,7 @@ static char *caca_arreglo_a_cadena(tipo_dato *arreglo, int tam_arreglo,
 
 	for (i = 0; i < tam_arreglo; i++) {
 		characteres_escritos +=
-				sprintf(ap_buffer + characteres_escritos, "%2llu",
+				sprintf(ap_buffer + characteres_escritos, "%2lu",
 						*(arreglo + i));
 		if (i < tam_arreglo - 1) {
 			*(ap_buffer + characteres_escritos++) = ',';
@@ -1053,7 +1054,7 @@ static inline int lee_matrix_long_stdin(tipo_dato *matrix, int *num_filas,
 		int *num_columnas, int num_max_filas, int num_max_columnas) {
 	int indice_filas = 0;
 	int indice_columnas = 0;
-	tipo_dato numero = 0;
+	long numero = 0;
 	char *siguiente_cadena_numero = NULL;
 	char *cadena_numero_actual = NULL;
 	char *linea = NULL;
@@ -1164,7 +1165,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	avl_node_t *nodo_actual = NULL;
 	avl_node_t *nodo_menor = NULL;
 	avl_node_t *nodo_recien = NULL;
-	int i = 0;
+	int i=0;
 
 	char *buffer = NULL;
 	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
@@ -1189,8 +1190,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 			caca_arreglo_a_cadena_natural(ancestros_nodo_recien_agregado,ESTRESHADOS_MAX_NIVELES_AVL,buffer));
 
 	for (indice_ultimo_ancestro_comun = ESTRESHADOS_MAX_NIVELES_AVL - 1;
-			(int) indice_ultimo_ancestro_comun >= (int) 0;
-			indice_ultimo_ancestro_comun--) {
+			(int)indice_ultimo_ancestro_comun >= (int)0; indice_ultimo_ancestro_comun--) {
 		natural idx_ancestro_minimo = 0;
 		natural idx_ancestro_recien = 0;
 
@@ -1222,8 +1222,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 			(natural)(estresha_recien_agregada));
 
 	for (i = indice_ultimo_ancestro_comun + 1;
-			i >= (int) (ESTRESHADOS_MAX_NIVELES_AVL - num_ancestros_recien);
-			i--) {
+			i >= (int)(ESTRESHADOS_MAX_NIVELES_AVL - num_ancestros_recien); i--) {
 		bool ancestro_actual_hijo_izq = falso;
 		natural indice_ancestro_actual = 0;
 		natural indice_ancestro_anterior = 0;
@@ -1321,7 +1320,7 @@ void estreshados_main() {
 	tipo_dato *conteos_niveles = NULL;
 
 	avl_tree_t *arbolin = NULL;
-	int i = 0;
+	int i=0;
 
 	char *buffer = NULL;
 	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
@@ -1398,7 +1397,7 @@ void estreshados_main() {
 			caca_arreglo_a_cadena(conteos_niveles,num_estrellas,buffer));
 
 	for (i = 0; i < num_estrellas; i++) {
-		printf("%llu\n", conteos_niveles[i]);
+		printf("%lu\n", conteos_niveles[i]);
 	}
 
 	avl_destroy(arbolin);
