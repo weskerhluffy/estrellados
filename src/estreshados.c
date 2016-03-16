@@ -1198,7 +1198,6 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 				|| conteo_ancestros >= num_ancestros_recien) {
 			break;
 		}
-		conteo_ancestros++;
 
 		idx_ancestro_minimo =
 				ancestros_nodo_minumo[indice_ultimo_ancestro_comun];
@@ -1208,6 +1207,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		if (idx_ancestro_minimo != idx_ancestro_recien) {
 			break;
 		}
+		conteo_ancestros++;
 	}
 
 	assert_timeout(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
@@ -1280,6 +1280,9 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 				}
 			}
 		} else {
+			caca_log_debug(
+					"el conteo de ancestros %u el num de ancestros recien %u",
+					conteo_ancestros, num_ancestros_recien);
 			if (num_ancestros_recien == conteo_ancestros) {
 				nodo_ancestro_actual =
 						arbolini->nodos_mem
@@ -1298,7 +1301,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 
 				if (nodo_ancestro_actual->left) {
 					conteo_inorder_en_x +=
-							nodo_ancestro_actual->left->num_decendientes;
+							nodo_ancestro_actual->left->num_decendientes + 1;
 				}
 			}
 
@@ -1324,7 +1327,7 @@ void estreshados_main() {
 	int i = 0;
 
 	char *buffer = NULL;
-	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 10, sizeof(char));
+	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 1000, sizeof(char));
 	assert_timeout(buffer);
 
 	matrix = calloc(ESTRESHADOS_MAX_ELEMENTOS_INPUT, sizeof(tipo_dato));
@@ -1411,4 +1414,5 @@ void estreshados_main() {
 
 int main(int argc, char **argv) {
 	estreshados_main();
+	return 0;
 }
