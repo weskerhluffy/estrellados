@@ -50,6 +50,8 @@ typedef enum BOOLEANOS {
  */
 #define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_DUROTE
 
+#define assert_timeout_dummy(condition) 0;
+
 #if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_DUROTE
 #define assert_timeout(condition) assert(condition);
 #endif
@@ -127,17 +129,17 @@ typedef struct avl_tree_iterator_t {
 avl_tree_t *avl_create(avl_tree_t **arbolin, int max_nodos) {
 	avl_tree_t *tree = NULL;
 
-	assert_timeout(arbolin);
+	assert_timeout_dummy(arbolin);
 
 	tree = calloc(1, sizeof(avl_tree_t));
 
-	assert_timeout(tree);
+	assert_timeout_dummy(tree);
 
 	tree->max_nodos = max_nodos;
 
 	tree->nodos_mem = calloc(max_nodos * 2, sizeof(avl_node_t));
 
-	assert_timeout(tree->nodos_mem);
+	assert_timeout_dummy(tree->nodos_mem);
 
 	tree->root = NULL;
 
@@ -395,7 +397,7 @@ static inline avl_node_t *avl_balance_node_insertar(const avl_node_t *node,
 				if (llave_nueva > padre->llave) {
 					rama_padre = &padre->right;
 				} else {
-					assert_timeout(0);
+					assert_timeout_dummy(0);
 				}
 			}
 			*rama_padre = newroot;
@@ -451,10 +453,10 @@ void avl_insert(avl_tree_t *tree, tipo_dato value) {
 					if (value == next->llave) {
 						/* Have we already inserted this node? */
 						caca_log_debug("llave ya existe, no insertada\n");
-						assert_timeout(0);
+						assert_timeout_dummy(0);
 					} else {
 						caca_log_debug("verga, no es maior menor ni igual\n");
-						assert_timeout(0);
+						assert_timeout_dummy(0);
 
 					}
 				}
@@ -1125,7 +1127,7 @@ static inline void estreshados_encuentra_ancestros(avl_tree_t *arbolin,
 	bool encontrado = falso;
 	avl_node_t *ancestro_actual = NULL;
 
-	assert_timeout(arbolin->root);
+	assert_timeout_dummy(arbolin->root);
 	*num_ancestros = 0;
 
 	ancestro_actual = arbolin->root;
@@ -1147,7 +1149,7 @@ static inline void estreshados_encuentra_ancestros(avl_tree_t *arbolin,
 		}
 	}
 
-	assert_timeout(encontrado);
+	assert_timeout_dummy(encontrado);
 
 	*num_ancestros = num_ancestros_usados;
 }
@@ -1210,13 +1212,13 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		conteo_ancestros++;
 	}
 
-	assert_timeout(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
+	assert_timeout_dummy(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
 
 	nodo_recien = arbolini->nodos_mem
 			+ ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL
 					- (num_ancestros_recien)];
 
-	assert_timeout(estresha_recien_agregada == nodo_recien->llave);
+	assert_timeout_dummy(estresha_recien_agregada == nodo_recien->llave);
 	caca_log_debug("contando desde el min asta %u,%u",
 			(natural)(estresha_recien_agregada>>32),
 			(natural)(estresha_recien_agregada));
@@ -1242,7 +1244,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 					(natural)(nodo_ancestro_actual->llave>>32),
 					(natural)nodo_ancestro_actual->llave);
 
-			assert_timeout(
+			assert_timeout_dummy(
 					nodo_ancestro_actual->indice_en_arreglo
 							== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
 
@@ -1295,7 +1297,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 						(natural)nodo_ancestro_actual->llave,
 						nodo_ancestro_actual->indice_en_arreglo);
 
-				assert_timeout(
+				assert_timeout_dummy(
 						nodo_ancestro_actual->indice_en_arreglo
 								== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
 
@@ -1328,13 +1330,13 @@ void estreshados_main() {
 
 	char *buffer = NULL;
 	buffer = calloc(CACA_COMUN_TAM_MAX_LINEA * 1000, sizeof(char));
-	assert_timeout(buffer);
+	assert_timeout_dummy(buffer);
 
 	matrix = calloc(ESTRESHADOS_MAX_ELEMENTOS_INPUT, sizeof(tipo_dato));
-	assert_timeout(matrix);
+	assert_timeout_dummy(matrix);
 
 	conteos_niveles = calloc(ESTRESHADOS_MAX_ESTRELLAS, sizeof(tipo_dato));
-	assert_timeout(conteos_niveles);
+	assert_timeout_dummy(conteos_niveles);
 
 	lee_matrix_long_stdin(matrix, &num_filas, NULL,
 			ESTRESHADOS_MAX_ESTRELLAS + 1, 2);
@@ -1348,7 +1350,7 @@ void estreshados_main() {
 
 	coordenadas_enmascaradas = calloc(ESTRESHADOS_MAX_ESTRELLAS,
 			sizeof(tipo_dato));
-	assert_timeout(coordenadas_enmascaradas);
+	assert_timeout_dummy(coordenadas_enmascaradas);
 
 	for (i = 0; i < num_estrellas; i++) {
 		*(coordenadas_enmascaradas + i) = (natural) *(coordenadas_separadas
