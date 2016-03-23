@@ -91,6 +91,8 @@ void caca_log_debug_func(const char *format, ...);
 #define ESTRESHADOS_VALOR_X(llave) ((natural)((llave)>>32))
 #define ESTRESHADOS_VALOR_Y(llave) ((natural)(llave))
 
+#define ESTRESHADOS_VALOR_INVALIDO -1
+
 #if 1
 
 #define AVL_VALOR_INVALIDO ESTRESHADOS_VALOR_INVALIDO
@@ -429,7 +431,7 @@ void avl_insert(avl_tree_t *tree, tipo_dato value) {
 	avl_node_t *last = NULL;
 
 	/* Well, there must be a first case */
-	if (tree->root == NULL ) {
+	if (tree->root == NULL) {
 		node = avl_create_node(tree);
 		node->llave = value;
 
@@ -439,7 +441,7 @@ void avl_insert(avl_tree_t *tree, tipo_dato value) {
 	} else {
 		next = tree->root;
 
-		while (next != NULL ) {
+		while (next != NULL) {
 			last = next;
 
 			next->num_decendientes++;
@@ -534,7 +536,7 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 	return current ? current->llave == value ? current : NULL :NULL;
 }
 
-	/* Do a depth first traverse of a node. */
+/* Do a depth first traverse of a node. */
 void avl_traverse_node_dfs(avl_node_t *node, int depth) {
 	int i = 0;
 
@@ -583,7 +585,7 @@ static inline avl_node_t* avl_tree_iterador_siguiente(avl_tree_iterator_t *iter)
 	}
 
 	if (!avl_tree_iterador_hay_siguiente(iter)) {
-		return NULL ;
+		return NULL;
 	}
 
 	contador_actual =
@@ -659,7 +661,7 @@ static inline char *avl_tree_inoder_node_travesti(avl_node_t *nodo, char *buf,
 
 	assert_timeout(profundidad_maxima == -1 || profundidad != -1);
 
-	if (nodo != NULL ) {
+	if (nodo != NULL) {
 		profundidad = profundidad_maxima - nodo->altura;
 
 		assert_timeout(!nodo->right || nodo->right->padre == nodo);
@@ -704,7 +706,7 @@ static inline char *avl_tree_inoder_node_travesti_conteo(avl_node_t *nodo,
 
 	assert_timeout(profundidad_maxima == -1 || profundidad != -1);
 
-	if (nodo != NULL ) {
+	if (nodo != NULL) {
 		profundidad = profundidad_maxima - nodo->altura;
 
 		assert_timeout(!nodo->right || nodo->right->padre == nodo);
@@ -808,7 +810,7 @@ static inline avl_node_t* avl_tree_max_min(avl_tree_t *arbolin, bool max) {
 
 static inline void avl_tree_validar_arbolin_indices(avl_tree_t *arbolin,
 		avl_node_t *nodo) {
-	if (nodo != NULL ) {
+	if (nodo != NULL) {
 		assert_timeout(&arbolin->nodos_mem[nodo->indice_en_arreglo] == nodo);
 		assert_timeout(!nodo->left || nodo->left->padre == nodo);
 		avl_tree_validar_arbolin_indices(arbolin, nodo->left);
@@ -825,7 +827,7 @@ static inline avl_node_t* avl_siguiente_nodo_inorder(avl_node_t *node) {
 	avl_node_t *current = node;
 
 	/* loop down to find the leftmost leaf */
-	while (current->left != NULL ) {
+	while (current->left != NULL) {
 		current = current->left;
 	}
 
@@ -835,7 +837,7 @@ static inline avl_node_t* avl_siguiente_nodo_inorder(avl_node_t *node) {
 static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 		avl_node_t *root, int key) {
 
-	if (root == NULL ) {
+	if (root == NULL) {
 		return root;
 	}
 
@@ -847,10 +849,10 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 			root->right = avl_nodo_borrar(arbolini, root->right, key);
 			assert_timeout(!root->right || root->right->padre == root);
 		} else {
-			if (root->left == NULL || root->right == NULL ) {
+			if (root->left == NULL || root->right == NULL) {
 				avl_node_t *temp = root->left ? root->left : root->right;
 
-				if (temp == NULL ) {
+				if (temp == NULL) {
 					temp = root;
 					root = NULL;
 				} else {
@@ -886,7 +888,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 		}
 	}
 
-	if (root == NULL ) {
+	if (root == NULL) {
 		return root;
 	}
 
@@ -952,7 +954,7 @@ void caca_comun_timestamp(char *stime) {
 	struct timespec spec;
 	char parte_milisecundos[50];
 
-	ltime = time(NULL );
+	ltime = time(NULL);
 
 #ifndef ONLINE_JUDGE
 	localtime_r(&ltime, &result);
@@ -1007,9 +1009,8 @@ static char *caca_arreglo_a_cadena(tipo_dato *arreglo, int tam_arreglo,
 	ap_buffer = buffer;
 
 	for (i = 0; i < tam_arreglo; i++) {
-		characteres_escritos +=
-				sprintf(ap_buffer + characteres_escritos, "%2llu",
-						*(arreglo + i));
+		characteres_escritos += sprintf(ap_buffer + characteres_escritos,
+				"%2llu", *(arreglo + i));
 		if (i < tam_arreglo - 1) {
 			*(ap_buffer + characteres_escritos++) = ',';
 		}
@@ -1105,16 +1106,18 @@ static inline bool estreshados_es_hijo_izq(avl_tree_t *arbolin,
 
 	potencial_hijo = arbolin->nodos_mem + idx_potencial_hijo;
 
-	assert_timeout(nodo_padre->left || nodo_padre->right);
+	assert_timeout_dummy(nodo_padre->left || nodo_padre->right);
+	assert_timeout_dummy(potencial_hijo->padre);
+	assert_timeout_dummy(potencial_hijo->padre == nodo_padre);
 
 	if (nodo_padre->left) {
 		if (potencial_hijo == nodo_padre->left) {
 			es_izq = verdadero;
 		} else {
-			assert_timeout(nodo_padre->right == potencial_hijo);
+			assert_timeout_dummy(nodo_padre->right == potencial_hijo);
 		}
 	} else {
-		assert_timeout(nodo_padre->right == potencial_hijo);
+		assert_timeout_dummy(nodo_padre->right == potencial_hijo);
 	}
 
 	return es_izq;
@@ -1136,6 +1139,10 @@ static inline void estreshados_encuentra_ancestros(avl_tree_t *arbolin,
 	while (ancestro_actual) {
 		*(ancestros + tam_ancestros - (num_ancestros_usados + 1)) =
 				ancestro_actual->indice_en_arreglo;
+		assert_timeout(
+				ancestro_actual
+						== arbolin->nodos_mem
+								+ ancestro_actual->indice_en_arreglo);
 		num_ancestros_usados++;
 		if (llave > ancestro_actual->llave) {
 			ancestro_actual = ancestro_actual->right;
@@ -1162,7 +1169,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	natural num_ancestros_recien = 0;
 	natural conteo_ancestros = 0;
 	natural ancestros_nodo_minumo[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
-	natural ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
+	natural ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL] = {
+	ESTRESHADOS_VALOR_INVALIDO };
 	avl_node_t *nodo_actual = NULL;
 	avl_node_t *nodo_menor = NULL;
 	avl_node_t *nodo_recien = NULL;
@@ -1212,7 +1220,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		conteo_ancestros++;
 	}
 
-	assert_timeout_dummy(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
+	assert_timeout_dummy(
+			indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
 
 	nodo_recien = arbolini->nodos_mem
 			+ ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL
@@ -1236,6 +1245,11 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		if (indice_ancestro_actual < indice_ultimo_ancestro_comun + 1) {
 			indice_ancestro_anterior = indice_ancestro_actual + 1;
 
+			assert_timeout(indice_ancestro_anterior<ESTRESHADOS_MAX_NIVELES_AVL);
+
+			assert_timeout(
+					ancestros_nodo_recien_agregado[indice_ancestro_actual] != ESTRESHADOS_VALOR_INVALIDO);
+
 			nodo_ancestro_actual = arbolini->nodos_mem
 					+ ancestros_nodo_recien_agregado[indice_ancestro_actual];
 
@@ -1245,11 +1259,18 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 					(natural)nodo_ancestro_actual->llave);
 
 			assert_timeout_dummy(
-					nodo_ancestro_actual->indice_en_arreglo
-							== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+					nodo_ancestro_actual->indice_en_arreglo == ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+
+			assert_timeout(
+					ancestros_nodo_recien_agregado[indice_ancestro_anterior] != ESTRESHADOS_VALOR_INVALIDO);
 
 			nodo_ancestro_anterior = arbolini->nodos_mem
 					+ ancestros_nodo_recien_agregado[indice_ancestro_anterior];
+
+			assert_timeout_dummy(nodo_ancestro_actual != arbolini->root);
+			assert_timeout_dummy(nodo_ancestro_actual->padre);
+			assert_timeout_dummy(
+					nodo_ancestro_actual->padre == nodo_ancestro_anterior);
 
 			ancestro_actual_hijo_izq = estreshados_es_hijo_izq(arbolini,
 					nodo_ancestro_anterior,
@@ -1298,8 +1319,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 						nodo_ancestro_actual->indice_en_arreglo);
 
 				assert_timeout_dummy(
-						nodo_ancestro_actual->indice_en_arreglo
-								== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+						nodo_ancestro_actual->indice_en_arreglo == ancestros_nodo_recien_agregado[indice_ancestro_actual]);
 
 				if (nodo_ancestro_actual->left) {
 					conteo_inorder_en_x +=
@@ -1339,7 +1359,7 @@ void estreshados_main() {
 	assert_timeout_dummy(conteos_niveles);
 
 	lee_matrix_long_stdin(matrix, &num_filas, NULL,
-			ESTRESHADOS_MAX_ESTRELLAS + 1, 2);
+	ESTRESHADOS_MAX_ESTRELLAS + 1, 2);
 
 	num_estrellas = *matrix;
 	coordenadas_separadas = matrix + 2;
