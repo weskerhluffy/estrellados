@@ -1221,7 +1221,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	}
 
 	assert_timeout_dummy(
-			indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
+			indice_ultimo_ancestro_comun<(ESTRESHADOS_MAX_NIVELES_AVL-1));
 
 	nodo_recien = arbolini->nodos_mem
 			+ ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL
@@ -1245,7 +1245,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		if (indice_ancestro_actual < indice_ultimo_ancestro_comun + 1) {
 			indice_ancestro_anterior = indice_ancestro_actual + 1;
 
-			assert_timeout(indice_ancestro_anterior<ESTRESHADOS_MAX_NIVELES_AVL);
+			assert_timeout_dummy(
+					indice_ancestro_anterior<ESTRESHADOS_MAX_NIVELES_AVL);
 
 			assert_timeout(
 					ancestros_nodo_recien_agregado[indice_ancestro_actual] != ESTRESHADOS_VALOR_INVALIDO);
