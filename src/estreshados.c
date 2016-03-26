@@ -1111,10 +1111,10 @@ static inline bool estreshados_es_hijo_izq(avl_tree_t *arbolin,
 		if (potencial_hijo == nodo_padre->left) {
 			es_izq = verdadero;
 		} else {
-			assert_timeout(nodo_padre->right == potencial_hijo);
+			assert_timeout_dummy(nodo_padre->right == potencial_hijo);
 		}
 	} else {
-		assert_timeout(nodo_padre->right == potencial_hijo);
+		assert_timeout_dummy(nodo_padre->right == potencial_hijo);
 	}
 
 	return es_izq;
@@ -1162,7 +1162,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	natural num_ancestros_recien = 0;
 	natural conteo_ancestros = 0;
 	natural ancestros_nodo_minumo[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
-	natural ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL] = { 0 };
+	natural ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL] = { -1 };
 	avl_node_t *nodo_actual = NULL;
 	avl_node_t *nodo_menor = NULL;
 	avl_node_t *nodo_recien = NULL;
@@ -1179,6 +1179,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	estreshados_encuentra_ancestros(arbolini, nodo_menor->llave,
 			ancestros_nodo_minumo, &num_ancestros_minimo,
 			ESTRESHADOS_MAX_NIVELES_AVL);
+	assert_timeout_dummy(
+			num_ancestros_minimo && num_ancestros_minimo<ESTRESHADOS_MAX_NIVELES_AVL);
 
 	caca_log_debug("los ancestros de minimo son %s",
 			caca_arreglo_a_cadena_natural(ancestros_nodo_minumo,ESTRESHADOS_MAX_NIVELES_AVL,buffer));
@@ -1186,6 +1188,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 	estreshados_encuentra_ancestros(arbolini, estresha_recien_agregada,
 			ancestros_nodo_recien_agregado, &num_ancestros_recien,
 			ESTRESHADOS_MAX_NIVELES_AVL);
+	assert_timeout_dummy(
+			num_ancestros_recien && num_ancestros_recien<ESTRESHADOS_MAX_NIVELES_AVL);
 
 	caca_log_debug("los ancestros de recien son %s",
 			caca_arreglo_a_cadena_natural(ancestros_nodo_recien_agregado,ESTRESHADOS_MAX_NIVELES_AVL,buffer));
@@ -1212,7 +1216,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 		conteo_ancestros++;
 	}
 
-	assert_timeout_dummy(indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
+	assert_timeout_dummy(
+			indice_ultimo_ancestro_comun<ESTRESHADOS_MAX_NIVELES_AVL-1);
 
 	nodo_recien = arbolini->nodos_mem
 			+ ancestros_nodo_recien_agregado[ESTRESHADOS_MAX_NIVELES_AVL
@@ -1245,8 +1250,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 					(natural)nodo_ancestro_actual->llave);
 
 			assert_timeout_dummy(
-					nodo_ancestro_actual->indice_en_arreglo
-							== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+					nodo_ancestro_actual->indice_en_arreglo == ancestros_nodo_recien_agregado[indice_ancestro_actual]);
 
 			nodo_ancestro_anterior = arbolini->nodos_mem
 					+ ancestros_nodo_recien_agregado[indice_ancestro_anterior];
@@ -1298,8 +1302,7 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 						nodo_ancestro_actual->indice_en_arreglo);
 
 				assert_timeout_dummy(
-						nodo_ancestro_actual->indice_en_arreglo
-								== ancestros_nodo_recien_agregado[indice_ancestro_actual]);
+						nodo_ancestro_actual->indice_en_arreglo == ancestros_nodo_recien_agregado[indice_ancestro_actual]);
 
 				if (nodo_ancestro_actual->left) {
 					conteo_inorder_en_x +=
