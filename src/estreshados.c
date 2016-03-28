@@ -500,7 +500,7 @@ avl_node_t *avl_find(avl_tree_t *tree, tipo_dato value) {
 }
 
 avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
-		avl_node_t **primer_nodo_mayor_o_igual, tipo_dato value, int tope,
+		avl_node_t **primer_nodo_mayor_o_igual, tipo_dato value, tipo_dato tope,
 		bool *tope_topado) {
 	avl_node_t *current = NULL;
 	avl_node_t *primer_nodo_mayor = NULL;
@@ -534,6 +534,10 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 		if (current && (current->llave == value)) {
 			*primer_nodo_mayor_o_igual = current;
 		}
+	}
+
+	if (tope_topado && current->llave >= tope && value >= tope) {
+		*tope_topado = verdadero;
 	}
 
 	return current ? current->llave == value ? current : NULL :NULL;
@@ -1356,15 +1360,34 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 
 static inline tipo_dato estreshados_contar_nodos_izq_aba_iterando(
 		avl_tree_t *arbolini, tipo_dato estresha_recien_agregada) {
+	bool itachi = falso;
 	tipo_dato ichi = 0;
 	avl_node_t *nodo_min = NULL;
+	avl_node_t *nueva_raiz = NULL;
 	avl_node_t *nodo_min_encontrado = NULL;
 	avl_tree_iterator_t iter_mem = { 0 };
 	avl_tree_iterator_t *iter = &iter_mem;
 
-	nodo_min = avl_tree_max_min(arbolini, falso);
-
 	avl_tree_iterador_ini(arbolini, iter);
+
+	avl_find_descartando(arbolini->root, &nueva_raiz, estresha_recien_agregada,
+			estresha_recien_agregada, &itachi);
+
+	assert_timeout(itachi);
+	assert_timeout(nueva_raiz);
+
+	if (nueva_raiz != arbolini->root) {
+		assert_timeout(nueva_raiz->padre);
+		ichi = 1;
+		if (nueva_raiz->padre->left) {
+			ichi += nueva_raiz->padre->left->num_decendientes + 1;
+		}
+	}
+
+	while (nueva_raiz) {
+		nodo_min = nueva_raiz;
+		nueva_raiz = nueva_raiz->left;
+	}
 
 	nodo_min_encontrado = avl_tree_iterador_asignar_actual(iter,
 			nodo_min->llave);
