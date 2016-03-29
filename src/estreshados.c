@@ -508,35 +508,37 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 	current = nodo_raiz;
 	assert_timeout(!tope_topado || tope);
 
+	assert_timeout(!tope_topado || tope >= value);
+
 	if (tope_topado) {
 		*tope_topado = falso;
 	}
 
-	while (current && current->llave != value) {
+	do {
 		if (tope_topado) {
-			if (current->llave >= tope && value >= tope) {
+			if (current->llave >= tope && !current->left) {
 				*tope_topado = verdadero;
 				break;
 			}
 		}
 		if (value > current->llave) {
-			current = current->right;
-		} else {
 			if (!primer_nodo_mayor) {
 				primer_nodo_mayor = current;
 			}
+			current = current->right;
+		} else {
 			current = current->left;
 		}
-	}
+	} while (current && current->llave != value);
 
 	*primer_nodo_mayor_o_igual = primer_nodo_mayor;
-	if (!primer_nodo_mayor_o_igual) {
+	if (!*primer_nodo_mayor_o_igual) {
 		if (current && (current->llave == value)) {
 			*primer_nodo_mayor_o_igual = current;
 		}
 	}
 
-	if (tope_topado && current->llave >= tope && value >= tope) {
+	if (tope_topado && current && current->llave >= tope && value >= tope) {
 		*tope_topado = verdadero;
 	}
 
@@ -1360,34 +1362,15 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba(avl_tree_t *arbolini,
 
 static inline tipo_dato estreshados_contar_nodos_izq_aba_iterando(
 		avl_tree_t *arbolini, tipo_dato estresha_recien_agregada) {
-	bool itachi = falso;
 	tipo_dato ichi = 0;
 	avl_node_t *nodo_min = NULL;
-	avl_node_t *nueva_raiz = NULL;
 	avl_node_t *nodo_min_encontrado = NULL;
 	avl_tree_iterator_t iter_mem = { 0 };
 	avl_tree_iterator_t *iter = &iter_mem;
 
+	nodo_min = avl_tree_max_min(arbolini, falso);
+
 	avl_tree_iterador_ini(arbolini, iter);
-
-	avl_find_descartando(arbolini->root, &nueva_raiz, estresha_recien_agregada,
-			estresha_recien_agregada, &itachi);
-
-	assert_timeout(itachi);
-	assert_timeout(nueva_raiz);
-
-	if (nueva_raiz != arbolini->root) {
-		assert_timeout(nueva_raiz->padre);
-		ichi = 1;
-		if (nueva_raiz->padre->left) {
-			ichi += nueva_raiz->padre->left->num_decendientes + 1;
-		}
-	}
-
-	while (nueva_raiz) {
-		nodo_min = nueva_raiz;
-		nueva_raiz = nueva_raiz->left;
-	}
 
 	nodo_min_encontrado = avl_tree_iterador_asignar_actual(iter,
 			nodo_min->llave);
@@ -1405,6 +1388,61 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba_iterando(
 	}
 
 	avl_tree_iterador_fini(iter);
+
+	caca_log_debug("el nodo %u,%u es de nivel %lu",
+			(natural)(estresha_recien_agregada>>32),
+			(natural)estresha_recien_agregada, ichi);
+
+	return ichi;
+}
+
+static inline tipo_dato estreshados_contar_nodos_izq_aba_descartando(
+		avl_tree_t *arbolini, tipo_dato estresha_recien_agregada) {
+	bool itachi = falso;
+	tipo_dato ichi = 0;
+	avl_node_t *nueva_raiz = NULL;
+	avl_node_t *nodo_act = NULL;
+	avl_node_t *nodo_ult = NULL;
+
+	avl_find_descartando(arbolini->root, &nueva_raiz, estresha_recien_agregada,
+			estresha_recien_agregada, &itachi);
+
+	assert_timeout(itachi);
+	assert_timeout(nueva_raiz);
+
+	nodo_act = nueva_raiz;
+
+	while (nodo_act) {
+		nodo_ult = nodo_act;
+		if (estresha_recien_agregada > nodo_act->llave) {
+			nodo_act = nodo_act->right;
+		} else {
+			if (estresha_recien_agregada < nodo_act->llave) {
+				nodo_act = nodo_act->left;
+			} else {
+				nodo_act = NULL;
+				assert_timeout(
+						nodo_act->padre
+								|| (nodo_act == nueva_raiz
+										&& nueva_raiz == arbolini->root));
+				if (nodo_act->padre) {
+					ichi += 1;
+					if (nodo_act->padre->left) {
+						ichi += 1 + nodo_act->padre->left->num_decendientes;
+					}
+				}
+				if (nodo_act->left) {
+					ichi += 1 + nodo_act->left->num_decendientes;
+				}
+			}
+		}
+	}
+
+	assert_timeout(nodo_ult && nodo_ult->llave == estresha_recien_agregada);
+
+	caca_log_debug("el nodo %u,%u es de nivel %lu",
+			(natural)(estresha_recien_agregada>>32),
+			(natural)estresha_recien_agregada, ichi);
 
 	return ichi;
 }
