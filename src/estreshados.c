@@ -516,7 +516,8 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 
 	do {
 		if (tope_topado) {
-			if (current->llave >= tope && !current->left) {
+			if ((current->llave > tope && !current->left)
+					|| current->llave == tope) {
 				*tope_topado = verdadero;
 				break;
 			}
@@ -527,7 +528,11 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 			}
 			current = current->right;
 		} else {
-			current = current->left;
+			if (value < current->llave) {
+				current = current->left;
+			} else {
+				break;
+			}
 		}
 	} while (current && current->llave != value);
 
@@ -931,6 +936,9 @@ void avl_borrar(avl_tree_t *tree, tipo_dato value) {
 
 	avl_node_t *newroot = NULL;
 
+	if (!tree->root) {
+		return;
+	}
 	newroot = avl_nodo_borrar(tree, tree->root, value);
 
 	if (newroot != tree->root) {
@@ -1528,6 +1536,14 @@ void estreshados_main() {
 #ifndef ESTRESHADOS_CONTEO_PROBADO
 #ifndef ESTRESHADOS_CONTEO_ITERA
 
+		tipo_dato raiz_valor = 0;
+		natural utlimo_idx = 0;
+
+		raiz_valor = arbolin->root->llave;
+
+		avl_borrar(arbolin, raiz_valor);
+		utlimo_idx = arbolin->ultimo_nodo_liberado_idx;
+		arbolin->ultimo_nodo_liberado_idx = 0;
 		avl_borrar(arbolin, estrella_negra);
 
 		caca_log_debug("el arbolin despues de borrar es\n%s",
@@ -1539,6 +1555,12 @@ void estreshados_main() {
 #endif
 
 		avl_insert(arbolin, estrella_negra);
+		caca_log_debug("el arbolin despues de insertar de nuez estresha es\n%s",
+				avl_tree_sprint_identado(arbolin,buffer));
+		if (raiz_valor != estrella_negra) {
+			arbolin->ultimo_nodo_liberado_idx = utlimo_idx;
+			avl_insert(arbolin, raiz_valor);
+		}
 
 		caca_log_debug("el arbolin despues de insertar de nuez es\n%s",
 				avl_tree_sprint_identado(arbolin,buffer));
