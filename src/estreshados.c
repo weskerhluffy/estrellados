@@ -754,6 +754,8 @@ static inline char *avl_tree_inoder_node_travesti_conteo(avl_node_t *nodo,
 static inline char* avl_tree_sprint_identado(avl_tree_t *arbolini, char *buf) {
 	int profundidad_maxima = 0;
 
+	*buf = '\0';
+
 	if (!arbolini->root) {
 		return buf;
 	}
@@ -844,7 +846,7 @@ static inline avl_node_t* avl_siguiente_nodo_inorder(avl_node_t *node) {
 }
 
 static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
-		avl_node_t *root, int key) {
+		avl_node_t *root, tipo_dato key) {
 
 	if (root == NULL ) {
 		return root;
@@ -865,7 +867,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 					temp = root;
 					root = NULL;
 				} else {
-					int idx_en_arreglo = 0;
+					natural idx_en_arreglo = 0;
 					avl_node_t *padre = NULL;
 
 					padre = root->padre;
@@ -902,6 +904,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 	}
 
 	avl_node_actualizar_altura(root);
+	avl_node_actualizar_num_decendientes(root);
 
 	int balance = avl_balance_factor(root);
 
@@ -924,7 +927,7 @@ static inline avl_node_t *avl_nodo_borrar(avl_tree_t *arbolini,
 	return root;
 }
 
-void avl_borrar(avl_tree_t *tree, int value) {
+void avl_borrar(avl_tree_t *tree, tipo_dato value) {
 
 	avl_node_t *newroot = NULL;
 
@@ -1524,6 +1527,27 @@ void estreshados_main() {
 
 #ifndef ESTRESHADOS_CONTEO_PROBADO
 #ifndef ESTRESHADOS_CONTEO_ITERA
+
+		avl_borrar(arbolin, estrella_negra);
+
+		caca_log_debug("el arbolin despues de borrar es\n%s",
+				avl_tree_sprint_identado(arbolin,buffer));
+
+#ifndef ONLINE_JUDGE
+		avl_tree_validar_arbolin_indices(arbolin, arbolin->root);
+		caca_log_debug("validado despues de borrar \n");
+#endif
+
+		avl_insert(arbolin, estrella_negra);
+
+		caca_log_debug("el arbolin despues de insertar de nuez es\n%s",
+				avl_tree_sprint_identado(arbolin,buffer));
+
+#ifndef ONLINE_JUDGE
+		avl_tree_validar_arbolin_indices(arbolin, arbolin->root);
+		caca_log_debug("validado despues de insertar again\n");
+#endif
+
 		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba_descartando(
 				arbolin, estrella_negra);
 #else
