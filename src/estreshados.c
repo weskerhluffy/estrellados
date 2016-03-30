@@ -506,7 +506,7 @@ avl_node_t *avl_find_descartando(avl_node_t *nodo_raiz,
 	avl_node_t *primer_nodo_mayor = NULL;
 
 	current = nodo_raiz;
-	assert_timeout(!tope_topado || tope);
+	assert_timeout(!tope_topado || tope || !nodo_raiz->llave);
 
 	assert_timeout(!tope_topado || tope >= value);
 
@@ -1414,26 +1414,24 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba_descartando(
 
 	while (nodo_act) {
 		nodo_ult = nodo_act;
-		if (estresha_recien_agregada > nodo_act->llave) {
-			nodo_act = nodo_act->right;
+		if (estresha_recien_agregada < nodo_act->llave) {
+			nodo_act = nodo_act->left;
 		} else {
-			if (estresha_recien_agregada < nodo_act->llave) {
-				nodo_act = nodo_act->left;
+			if (estresha_recien_agregada > nodo_act->llave) {
+				ichi += 1;
+				if (nodo_act->left) {
+					ichi += 1 + nodo_act->left->num_decendientes;
+				}
+				nodo_act = nodo_act->right;
 			} else {
-				nodo_act = NULL;
 				assert_timeout(
 						nodo_act->padre
 								|| (nodo_act == nueva_raiz
 										&& nueva_raiz == arbolini->root));
-				if (nodo_act->padre) {
-					ichi += 1;
-					if (nodo_act->padre->left) {
-						ichi += 1 + nodo_act->padre->left->num_decendientes;
-					}
-				}
 				if (nodo_act->left) {
 					ichi += 1 + nodo_act->left->num_decendientes;
 				}
+				nodo_act = NULL;
 			}
 		}
 	}
@@ -1525,8 +1523,13 @@ void estreshados_main() {
 				avl_tree_sprint_identado(arbolin,buffer));
 
 #ifndef ESTRESHADOS_CONTEO_PROBADO
+#ifndef ESTRESHADOS_CONTEO_ITERA
+		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba_descartando(
+				arbolin, estrella_negra);
+#else
 		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba_iterando(
 				arbolin, estrella_negra);
+#endif
 #else
 		num_estrellas_abajo_izq = estreshados_contar_nodos_izq_aba(
 				arbolin, estrella_negra);
