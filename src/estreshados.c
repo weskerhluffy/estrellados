@@ -164,7 +164,7 @@ static inline void avl_tree_destroy(avl_tree_t *arbolin) {
 avl_tree_node_t *avl_tree_create_node(avl_tree_t *arbolin) {
 	avl_tree_node_t *node = NULL;
 
-	assert(
+	assert_timeout(
 			arbolin->ultimo_nodo_liberado_idx
 					|| arbolin->nodos_usados <= arbolin->max_nodos);
 
@@ -205,7 +205,8 @@ static inline void avl_tree_node_actualizar_altura(avl_tree_node_t *node) {
 	}
 }
 
-static inline void avl_tree_node_actualizar_num_decendientes(avl_tree_node_t *node) {
+static inline void avl_tree_node_actualizar_num_decendientes(
+		avl_tree_node_t *node) {
 	int conteo_left = 0;
 	int conteo_right = 0;
 
@@ -356,8 +357,8 @@ int avl_tree_balance_factor(avl_tree_node_t *node) {
 	return bf;
 }
 
-static inline avl_tree_node_t *avl_tree_balance_node_insertar(const avl_tree_node_t *node,
-		const tipo_dato llave_nueva) {
+static inline avl_tree_node_t *avl_tree_balance_node_insertar(
+		const avl_tree_node_t *node, const tipo_dato llave_nueva) {
 	avl_tree_node_t *newroot = NULL;
 	avl_tree_node_t *nodo_actual = NULL;
 
@@ -457,9 +458,20 @@ void avl_tree_insert(avl_tree_t *tree, tipo_dato value) {
 					next = next->right;
 				} else {
 					if (value == next->llave) {
+						avl_tree_node_t *ancestro_actal = NULL;
 						/* Have we already inserted this node? */
-						caca_log_debug("llave ya existe, no insertada\n");
-						assert_timeout(0);
+						next->ocurrencias++;
+						caca_log_debug(
+								"llave ya existe, aumentando contador a carajo %u\n",
+								next->ocurrencias);
+
+						ancestro_actal = next;
+						while (ancestro_actal) {
+							caca_log_debug("bajando decendientes de %llu",ancestro_actal->llave);
+							ancestro_actal->num_decendientes--;
+							ancestro_actal = ancestro_actal->padre;
+						}
+						return;
 					} else {
 						caca_log_debug("verga, no es maior menor ni igual\n");
 						assert_timeout(0);
@@ -482,6 +494,7 @@ void avl_tree_insert(avl_tree_t *tree, tipo_dato value) {
 		node->padre = last;
 
 	}
+	node->ocurrencias = 1;
 
 	avl_tree_balance_insertar(tree, node, value);
 }
@@ -501,8 +514,8 @@ avl_tree_node_t *avl_tree_find(avl_tree_t *tree, tipo_dato value) {
 }
 
 avl_tree_node_t *avl_tree_find_descartando(avl_tree_node_t *nodo_raiz,
-		avl_tree_node_t **primer_nodo_mayor_o_igual, tipo_dato value, tipo_dato tope,
-		bool *tope_topado) {
+		avl_tree_node_t **primer_nodo_mayor_o_igual, tipo_dato value,
+		tipo_dato tope, bool *tope_topado) {
 	avl_tree_node_t *current = NULL;
 	avl_tree_node_t *primer_nodo_mayor = NULL;
 
@@ -560,7 +573,7 @@ void avl_tree_traverse_node_dfs(avl_tree_node_t *node, int depth) {
 
 	for (i = 0; i < depth; i++)
 		putchar(' ');
-	printf("%lld: %d\n", node->llave, avl_balance_factor(node));
+	printf("%lld: %d\n", node->llave, avl_tree_balance_factor(node));
 
 	if (node->right)
 		avl_tree_traverse_node_dfs(node->right, depth + 2);
@@ -589,7 +602,8 @@ static inline bool avl_tree_iterador_hay_siguiente(avl_tree_iterator_t *iter) {
 					== 2);
 }
 
-static inline avl_tree_node_t* avl_tree_iterador_siguiente(avl_tree_iterator_t *iter) {
+static inline avl_tree_node_t* avl_tree_iterador_siguiente(
+		avl_tree_iterator_t *iter) {
 	int contador_actual = 0;
 	avl_tree_node_t *nodo = NULL;
 	avl_tree_node_t *last_of_us = NULL;
@@ -668,8 +682,8 @@ static inline avl_tree_node_t* avl_tree_iterador_obtener_actual(
 
 }
 
-static inline char *avl_tree_inoder_node_travesti(avl_tree_node_t *nodo, char *buf,
-		int profundidad_maxima) {
+static inline char *avl_tree_inoder_node_travesti(avl_tree_node_t *nodo,
+		char *buf, int profundidad_maxima) {
 	char num_buf[100] = { '\0' };
 	int profundidad = 0;
 	int i = 0;
@@ -733,9 +747,9 @@ static inline char *avl_tree_inoder_node_travesti_conteo(avl_tree_node_t *nodo,
 				strcat(buf, " ");
 			}
 		}
-		sprintf(num_buf, "%lld [%u,%u] (%u)", nodo->llave,
+		sprintf(num_buf, "%lld [%u,%u] (%u) ocu %u", nodo->llave,
 				(natural )(nodo->llave >> 32), (natural )nodo->llave,
-				nodo->num_decendientes);
+				nodo->num_decendientes, nodo->ocurrencias);
 		strcat(buf, num_buf);
 		if (profundidad_maxima != -1) {
 			strcat(buf, "\n");
@@ -840,7 +854,8 @@ static inline void avl_tree_validar_arbolin_indices(avl_tree_t *arbolin,
 /* Given a non-empty binary search tree, return the node with minimum
  key value found in that tree. Note that the entire tree does not
  need to be searched. */
-static inline avl_tree_node_t* avl_tree_siguiente_nodo_inorder(avl_tree_node_t *node) {
+static inline avl_tree_node_t* avl_tree_siguiente_nodo_inorder(
+		avl_tree_node_t *node) {
 	avl_tree_node_t *current = node;
 
 	/* loop down to find the leftmost leaf */
@@ -852,55 +867,66 @@ static inline avl_tree_node_t* avl_tree_siguiente_nodo_inorder(avl_tree_node_t *
 }
 
 static inline avl_tree_node_t *avl_tree_nodo_borrar(avl_tree_t *arbolini,
-		avl_tree_node_t *root, tipo_dato key) {
+		avl_tree_node_t *root, tipo_dato key, bool ignora_conteo) {
 
 	if (root == NULL ) {
 		return root;
 	}
 
 	if (key < root->llave) {
-		root->left = avl_tree_nodo_borrar(arbolini, root->left, key);
+		root->left = avl_tree_nodo_borrar(arbolini, root->left, key,
+				ignora_conteo);
 		assert_timeout(!root->left || root->left->padre == root);
 	} else {
 		if (key > root->llave) {
-			root->right = avl_tree_nodo_borrar(arbolini, root->right, key);
+			root->right = avl_tree_nodo_borrar(arbolini, root->right, key,
+					ignora_conteo);
 			assert_timeout(!root->right || root->right->padre == root);
 		} else {
-			if (root->left == NULL || root->right == NULL ) {
-				avl_tree_node_t *temp = root->left ? root->left : root->right;
+			if ((root->ocurrencias - 1) == 0 || ignora_conteo) {
+				if (root->left == NULL || root->right == NULL ) {
+					avl_tree_node_t *temp =
+							root->left ? root->left : root->right;
 
-				if (temp == NULL ) {
-					temp = root;
-					root = NULL;
+					if (temp == NULL ) {
+						temp = root;
+						root = NULL;
+					} else {
+						natural idx_en_arreglo = 0;
+						avl_tree_node_t *padre = NULL;
+
+						padre = root->padre;
+						idx_en_arreglo = root->indice_en_arreglo;
+						*root = *temp;
+						root->padre = padre;
+						root->indice_en_arreglo = idx_en_arreglo;
+						if (root->left) {
+							root->left->padre = root;
+						}
+						if (root->right) {
+							root->right->padre = root;
+						}
+					}
+
+					assert_timeout(!arbolini->ultimo_nodo_liberado_idx);
+					arbolini->ultimo_nodo_liberado_idx =
+							temp->indice_en_arreglo;
+					memset(temp, 0, sizeof(avl_tree_node_t));
+					temp->llave = AVL_TREE_VALOR_INVALIDO;
+
 				} else {
-					natural idx_en_arreglo = 0;
-					avl_tree_node_t *padre = NULL;
+					avl_tree_node_t *temp = avl_tree_siguiente_nodo_inorder(
+							root->right);
 
-					padre = root->padre;
-					idx_en_arreglo = root->indice_en_arreglo;
-					*root = *temp;
-					root->padre = padre;
-					root->indice_en_arreglo = idx_en_arreglo;
-					if (root->left) {
-						root->left->padre = root;
-					}
-					if (root->right) {
-						root->right->padre = root;
-					}
+					root->llave = temp->llave;
+					root->ocurrencias = temp->ocurrencias;
+
+					root->right = avl_tree_nodo_borrar(arbolini, root->right,
+							temp->llave, verdadero);
 				}
-
-				assert_timeout(!arbolini->ultimo_nodo_liberado_idx);
-				arbolini->ultimo_nodo_liberado_idx = temp->indice_en_arreglo;
-				memset(temp, 0, sizeof(avl_tree_node_t));
-				temp->llave = AVL_TREE_VALOR_INVALIDO;
-
 			} else {
-				avl_tree_node_t *temp = avl_tree_siguiente_nodo_inorder(root->right);
-
-				root->llave = temp->llave;
-
-				root->right = avl_tree_nodo_borrar(arbolini, root->right,
-						temp->llave);
+				root->ocurrencias--;
+				return root;
 			}
 		}
 	}
@@ -940,7 +966,7 @@ void avl_tree_borrar(avl_tree_t *tree, tipo_dato value) {
 	if (!tree->root) {
 		return;
 	}
-	newroot = avl_tree_nodo_borrar(tree, tree->root, value);
+	newroot = avl_tree_nodo_borrar(tree, tree->root, value, falso);
 
 	if (newroot != tree->root) {
 		tree->root = newroot;
@@ -1416,8 +1442,8 @@ static inline tipo_dato estreshados_contar_nodos_izq_aba_descartando(
 	avl_tree_node_t *nodo_act = NULL;
 	avl_tree_node_t *nodo_ult = NULL;
 
-	avl_tree_find_descartando(arbolini->root, &nueva_raiz, estresha_recien_agregada,
-			estresha_recien_agregada, &itachi);
+	avl_tree_find_descartando(arbolini->root, &nueva_raiz,
+			estresha_recien_agregada, estresha_recien_agregada, &itachi);
 
 	assert_timeout(itachi);
 	assert_timeout(nueva_raiz);
@@ -1525,6 +1551,8 @@ void estreshados_main() {
 				(natural)estrella_negra, estrella_negra);
 
 		avl_tree_insert(arbolin, estrella_negra);
+		avl_tree_insert(arbolin, estrella_negra);
+		avl_tree_insert(arbolin, estrella_negra);
 
 #ifndef ONLINE_JUDGE
 		avl_tree_validar_arbolin_indices(arbolin, arbolin->root);
@@ -1544,10 +1572,16 @@ void estreshados_main() {
 
 		avl_tree_borrar(arbolin, raiz_valor);
 		utlimo_idx = arbolin->ultimo_nodo_liberado_idx;
+
+		caca_log_debug("el arbolin despues de borrar raiz\n%s",
+				avl_tree_sprint_identado(arbolin,buffer));
+
 		arbolin->ultimo_nodo_liberado_idx = 0;
 		avl_tree_borrar(arbolin, estrella_negra);
+		avl_tree_borrar(arbolin, estrella_negra);
+		avl_tree_borrar(arbolin, estrella_negra);
 
-		caca_log_debug("el arbolin despues de borrar es\n%s",
+		caca_log_debug("el arbolin despues de borrar nuevo valor\n%s",
 				avl_tree_sprint_identado(arbolin,buffer));
 
 #ifndef ONLINE_JUDGE
@@ -1561,6 +1595,10 @@ void estreshados_main() {
 		if (raiz_valor != estrella_negra) {
 			arbolin->ultimo_nodo_liberado_idx = utlimo_idx;
 			avl_tree_insert(arbolin, raiz_valor);
+			avl_tree_insert(arbolin, raiz_valor);
+			avl_tree_insert(arbolin, raiz_valor);
+			avl_tree_borrar(arbolin, raiz_valor);
+			avl_tree_borrar(arbolin, raiz_valor);
 		}
 
 		caca_log_debug("el arbolin despues de insertar de nuez es\n%s",
